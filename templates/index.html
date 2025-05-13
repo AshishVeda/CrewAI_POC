@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Chatbot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f5f5f7;
+        }
+        
+        .header {
+            background-color: #000;
+            color: #fff;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .chat-box {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .bot-message {
+            background-color: #e9ecef;
+            color: #212529;
+            align-self: flex-start;
+        }
+        
+        .message-data {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .input-container {
+            display: flex;
+            margin-top: 10px;
+        }
+        
+        #user-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        #send-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            margin-left: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        #send-button:hover {
+            background-color: #0069d9;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .suggested-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .query-chip {
+            background-color: #e9ecef;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+        
+        .query-chip:hover {
+            background-color: #dee2e6;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #888;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: typing 1s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        
+        /* Data display formatting */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+        }
+        
+        /* QA verification styling */
+        .qa-result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .qa-passed {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .qa-failed {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .qa-comparison {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        /* Thinking process styling */
+        .thinking-toggle {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            color: #6c757d;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 4px;
+            background-color: #f1f3f5;
+            border: 1px solid #dee2e6;
+            width: fit-content;
+        }
+        
+        .thinking-toggle:hover {
+            background-color: #e9ecef;
+        }
+        
+        .thinking-toggle .icon {
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+        
+        .thinking-toggle.expanded .icon {
+            transform: rotate(90deg);
+        }
+        
+        .thinking-container {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #007bff;
+            overflow: auto;
+            max-height: 400px;
+            font-size: 13px;
+        }
+        
+        .thinking-step {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .thinking-step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .thinking-step-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .thinking-step-content {
+            white-space: pre-wrap;
+            color: #212529;
+            font-family: monospace;
+            padding: 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* Responsive styling */
+        @media (max-width: 600px) {
+            .chat-container {
+                padding: 10px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Product Information Chatbot</h1>
+    </div>
+    
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box">
+            <div class="welcome-message">
+                <h2>Welcome to the Product Chatbot!</h2>
+                <p>Ask me anything about the iPhone's price, availability, market trends, or ratings.</p>
+            </div>
+            
+            <div class="suggested-queries">
+                <div class="query-chip" onclick="askQuery('What is the price of the iPhone?')">iPhone price?</div>
+                <div class="query-chip" onclick="askQuery('Is the iPhone available?')">iPhone availability?</div>
+                <div class="query-chip" onclick="askQuery('What is the rating of the iPhone?')">iPhone rating?</div>
+                <div class="query-chip" onclick="askQuery('What are the market trends for iPhone?')">iPhone market trends?</div>
+                <div class="query-chip" onclick="askQuery('Tell me everything about the iPhone')">All iPhone info</div>
+            </div>
+            
+            <div class="typing-indicator" id="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatBox = document.getElementById('chat-box');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            // Function to add a message to the chat
+            function addMessage(message, isUser, data = null, qaResult = null, thinkingSteps = null) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add(isUser ? 'user-message' : 'bot-message');
+                
+                // Format message text with line breaks
+                messageElement.innerHTML = message.replace(/\n/g, '<br>');
+                
+                // If there's data and it's not a user message, display it in a formatted way
+                if (data && !isUser) {
+                    const dataElement = document.createElement('div');
+                    dataElement.classList.add('message-data');
+                    
+                    // Create a table for the data
+                    if (typeof data === 'object') {
+                        const table = document.createElement('table');
+                        table.classList.add('data-table');
+                        
+                        // Add table headers
+                        const headerRow = document.createElement('tr');
+                        const keyHeader = document.createElement('th');
+                        keyHeader.textContent = 'Property';
+                        const valueHeader = document.createElement('th');
+                        valueHeader.textContent = 'Value';
+                        headerRow.appendChild(keyHeader);
+                        headerRow.appendChild(valueHeader);
+                        table.appendChild(headerRow);
+                        
+                        // Add table rows for each data property
+                        for (const [key, value] of Object.entries(data)) {
+                            // Skip the qa_result and thinking_steps as we'll display them separately
+                            if (key === 'qa_result' || key === 'thinking_steps') continue;
+                            
+                            const row = document.createElement('tr');
+                            const keyCell = document.createElement('td');
+                            keyCell.textContent = key;
+                            const valueCell = document.createElement('td');
+                            valueCell.textContent = value;
+                            row.appendChild(keyCell);
+                            row.appendChild(valueCell);
+                            table.appendChild(row);
+                        }
+                        
+                        dataElement.appendChild(table);
+                    } else {
+                        dataElement.textContent = JSON.stringify(data, null, 2);
+                    }
+                    
+                    messageElement.appendChild(dataElement);
+                }
+                
+                // If there are thinking steps, add a collapsible thinking section
+                if (thinkingSteps && !isUser && thinkingSteps.length > 0) {
+                    // Create thinking toggle button
+                    const thinkingToggle = document.createElement('div');
+                    thinkingToggle.classList.add('thinking-toggle');
+                    thinkingToggle.innerHTML = '<span class="icon">▶</span> Show thinking process';
+                    
+                    // Create thinking container (initially hidden)
+                    const thinkingContainer = document.createElement('div');
+                    thinkingContainer.classList.add('thinking-container');
+                    
+                    // Add each thinking step
+                    thinkingSteps.forEach(step => {
+                        const stepElement = document.createElement('div');
+                        stepElement.classList.add('thinking-step');
+                        
+                        const headerElement = document.createElement('div');
+                        headerElement.classList.add('thinking-step-header');
+                        headerElement.textContent = step.step;
+                        
+                        const contentElement = document.createElement('div');
+                        contentElement.classList.add('thinking-step-content');
+                        contentElement.textContent = step.content;
+                        
+                        stepElement.appendChild(headerElement);
+                        stepElement.appendChild(contentElement);
+                        thinkingContainer.appendChild(stepElement);
+                    });
+                    
+                    // Add toggle functionality
+                    thinkingToggle.addEventListener('click', function() {
+                        if (thinkingContainer.style.display === 'block') {
+                            thinkingContainer.style.display = 'none';
+                            thinkingToggle.innerHTML = '<span class="icon">▶</span> Show thinking process';
+                            thinkingToggle.classList.remove('expanded');
+                        } else {
+                            thinkingContainer.style.display = 'block';
+                            thinkingToggle.innerHTML = '<span class="icon">▶</span> Hide thinking process';
+                            thinkingToggle.classList.add('expanded');
+                        }
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    });
+                    
+                    messageElement.appendChild(thinkingToggle);
+                    messageElement.appendChild(thinkingContainer);
+                }
+                
+                // If there's a QA result, display it
+                if (qaResult && !isUser) {
+                    const qaElement = document.createElement('div');
+                    qaElement.classList.add('qa-result');
+                    qaElement.classList.add(qaResult.passed ? 'qa-passed' : 'qa-failed');
+                    
+                    // Add QA result header
+                    const qaHeader = document.createElement('h4');
+                    qaHeader.textContent = qaResult.passed ? 'QA Verification: Passed ✓' : 'QA Verification: Failed ✗';
+                    qaHeader.style.margin = '0 0 10px 0';
+                    qaElement.appendChild(qaHeader);
+                    
+                    // Add QA message
+                    const qaMessage = document.createElement('div');
+                    qaMessage.textContent = qaResult.message;
+                    qaElement.appendChild(qaMessage);
+                    
+                    // If there are comparisons, add them
+                    if (qaResult.comparison && qaResult.comparison.length > 0) {
+                        const qaCompTable = createComparisonTable(qaResult.comparison);
+                        qaElement.appendChild(qaCompTable);
+                    }
+                    
+                    // If there are product and market comparisons, add them
+                    if (qaResult.product_comparison && qaResult.product_comparison.length > 0) {
+                        const productHeader = document.createElement('h5');
+                        productHeader.textContent = 'Product Data Verification';
+                        productHeader.style.margin = '10px 0 5px 0';
+                        qaElement.appendChild(productHeader);
+                        
+                        const prodCompTable = createComparisonTable(qaResult.product_comparison);
+                        qaElement.appendChild(prodCompTable);
+                    }
+                    
+                    if (qaResult.market_comparison && qaResult.market_comparison.length > 0) {
+                        const marketHeader = document.createElement('h5');
+                        marketHeader.textContent = 'Market Data Verification';
+                        marketHeader.style.margin = '10px 0 5px 0';
+                        qaElement.appendChild(marketHeader);
+                        
+                        const marketCompTable = createComparisonTable(qaResult.market_comparison);
+                        qaElement.appendChild(marketCompTable);
+                    }
+                    
+                    messageElement.appendChild(qaElement);
+                }
+                
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            // Helper function to create a comparison table
+            function createComparisonTable(comparisons) {
+                const compTable = document.createElement('table');
+                compTable.classList.add('data-table');
+                compTable.classList.add('qa-comparison');
+                
+                // Add table headers
+                const headerRow = document.createElement('tr');
+                ['Field', 'Reported Value', 'Actual Value', 'Match'].forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                compTable.appendChild(headerRow);
+                
+                // Add rows for each comparison
+                comparisons.forEach(comp => {
+                    const row = document.createElement('tr');
+                    
+                    const fieldCell = document.createElement('td');
+                    fieldCell.textContent = comp.field;
+                    
+                    const reportedCell = document.createElement('td');
+                    reportedCell.textContent = comp.reported;
+                    
+                    const actualCell = document.createElement('td');
+                    actualCell.textContent = comp.actual;
+                    
+                    const matchCell = document.createElement('td');
+                    matchCell.textContent = comp.matches ? '✓' : '✗';
+                    matchCell.style.color = comp.matches ? '#155724' : '#721c24';
+                    matchCell.style.fontWeight = 'bold';
+                    
+                    row.appendChild(fieldCell);
+                    row.appendChild(reportedCell);
+                    row.appendChild(actualCell);
+                    row.appendChild(matchCell);
+                    
+                    compTable.appendChild(row);
+                });
+                
+                return compTable;
+            }
+            
+            // Function to show typing indicator
+            function showTypingIndicator() {
+                typingIndicator.style.display = 'block';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            // Function to hide typing indicator
+            function hideTypingIndicator() {
+                typingIndicator.style.display = 'none';
+            }
+            
+            // Function to handle sending a message
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                // Add user message to chat
+                addMessage(message, true);
+                
+                // Clear input
+                userInput.value = '';
+                
+                // Show typing indicator
+                showTypingIndicator();
+                
+                // Send message to server
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide typing indicator
+                    hideTypingIndicator();
+                    
+                    // Extract QA result and thinking steps if present
+                    const qaResult = data.qa_result;
+                    const thinkingSteps = data.thinking_steps;
+                    
+                    // Add bot response to chat
+                    let displayData = data.data;
+                    if (!displayData && data.product_data && data.market_data) {
+                        // Merge the data for display
+                        displayData = {
+                            ...data.product_data,
+                            ...data.market_data
+                        };
+                    }
+                    
+                    addMessage(data.response, false, displayData, qaResult, thinkingSteps);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideTypingIndicator();
+                    addMessage('Sorry, there was an error processing your request.', false);
+                });
+            }
+            
+            // Event listeners
+            sendButton.addEventListener('click', sendMessage);
+            
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Focus input on page load
+            userInput.focus();
+            
+            // Add initial bot message
+            setTimeout(() => {
+                addMessage('Hi there! I can help you with information about the iPhone. What would you like to know?', false);
+            }, 500);
+        });
+        
+        // Function to ask a suggested query
+        function askQuery(query) {
+            document.getElementById('user-input').value = query;
+            document.getElementById('send-button').click();
+        }
+    </script>
+</body>
+</html> 

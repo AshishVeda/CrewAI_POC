@@ -1,0 +1,4 @@
+flask==2.3.3
+crewai==0.28.5
+python-dotenv==1.0.0
+pydantic==2.5.2 
